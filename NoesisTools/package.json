@@ -1,0 +1,178 @@
+{
+	"name": "noesisgui-tools",
+	"publisher": "NoesisTechnologies",
+	"description": "Rich support for NoesisGUI and the XAML markup language. ",
+	"displayName": "NoesisGUI XAML Tools",
+	"author": "Noesis Technologies S.L.",
+	"license": "",
+	"version": "0.0.26",
+	"icon": "resources/images/favicon.png",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/NoesisGUI/LanguageServer"
+	},
+	"bugs": {
+		"url": "https://www.noesisengine.com/bugs/"
+	},
+	"categories": [],
+	"activationEvents": [
+		"workspaceContains:**/*.xaml",
+		"onLanguage:xaml"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "NoesisGUI XAML Tools",
+			"properties": {
+				"noesisgui-tools.createLanguageServerInstance": {
+					"type": "boolean",
+					"default": true,
+					"description": "Create a NoesisGUI language server instance"
+				},
+				"noesisgui-tools.languageServerPath": {
+					"type": "string",
+					"default": "",
+					"description": "NoesisGUI language server path, leave empty to use the bundled server"
+				},
+				"noesisgui-tools.languageServerArgs": {
+					"type": "array",
+					"default": [],
+					"description": "NoesisGUI language server arguments"
+				},
+				"noesisgui-tools.languageServerHost": {
+					"type": "string",
+					"default": "127.0.0.1",
+					"description": "NoesisGUI language server host"
+				},
+				"noesisgui-tools.reconnectAutomatically": {
+					"type": "boolean",
+					"default": true,
+					"description": "Attempt to reconnect automatically, after a disconnect"
+				},
+				"noesisgui-tools.openRenderPreviewOnStart": {
+					"type": "boolean",
+					"default": false,
+					"description": "Open the XAML Render Preview when NoesisGUI Tools starts"
+				},
+				"noesisgui-tools.reconnectDelay": {
+					"type": "number",
+					"default": 3000,
+					"description": "Milliseconds to wait before attempting to reconnect"
+				},
+				"noesisgui-tools.reconnectAttempts": {
+					"type": "number",
+					"default": 20,
+					"description": "How many times the extensions will attempt to reconnect"
+				},
+				"noesisgui-tools.autoCreateQuotes": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically add quotes to attribute properties"
+				},
+				"noesisgui-tools.autoClosingTags": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically close tags"
+				},
+				"noesisgui-tools.diagnosticsTrigger": {
+					"type": "string",
+					"default": "onChange",
+					"enum": [
+						"disabled",
+						"onChange",
+						"onSave"
+					],
+					"enumDescriptions": [
+						"Disable diagnostics (this will also disable render previews)",
+						"Generate diagnostics when a XAML document changes",
+						"Generate diagnostics when a XAML document is saved"
+					],
+					"description": "Change how diagnostics, and render previews, are generated"
+				},
+				"noesisgui-tools.diagnosticsChangeDelay": {
+					"type": "number",
+					"default": 600,
+					"description": "Milliseconds to wait before generating diagnostics and render previews"
+				}
+			}
+		},
+		"languages": [
+			{
+				"id": "xaml",
+				"extensions": [
+					".xaml"
+				],
+				"aliases": [
+					"XAML",
+					"Xaml",
+					"xaml"
+				],
+				"configuration": "./config/xaml.language-configuration.json",
+				"icon": {
+					"light": "./resources/images/favicon.png",
+					"dark": "./resources/images/favicon.png"
+				}
+			}
+		],
+		"grammars": [
+			{
+				"language": "xaml",
+				"scopeName": "text.xaml",
+				"path": "./syntaxes/xaml.tmLanguage.json"
+			}
+		],
+		"configurationDefaults": {
+			"[xaml]": {
+				"editor.wordBasedSuggestions": false,
+				"editor.tabSize": 2,
+				"editor.insertSpaces": true,
+				"editor.quickSuggestions": {
+					"other": true,
+					"comments": false,
+					"strings": true
+				}
+			}
+		},
+		"commands": [
+			{
+				"command": "noesisTool.openPreview",
+				"title": "Open XAML Preview"
+			}
+		],
+		"menus": {
+			"editor/title": [
+				{
+					"when": "resourceLangId == xaml",
+					"command": "noesisTool.openPreview",
+					"group": "navigation"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"lint": "eslint ./src --ext .ts,.tsx"
+	},
+	"engines": {
+		"vscode": "^1.63.0"
+	},
+	"dependencies": {
+		"await-notify": "^1.0.1",
+		"net": "^1.0.2",
+		"vscode-languageclient": "^7.0.0",
+		"portfinder": "^1.0.32"
+	},
+	"devDependencies": {
+		"@types/mocha": "^9.1.0",
+		"@types/node": "^16.11.7",
+		"@types/vscode": "^1.63.0",
+		"@typescript-eslint/eslint-plugin": "^5.30.0",
+		"@typescript-eslint/parser": "^5.30.0",
+		"eslint": "^8.13.0",
+		"mocha": "^9.2.1",
+		"typescript": "^4.8.4"
+	}
+}
