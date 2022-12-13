@@ -2,7 +2,7 @@
 
 Rich support for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language. 
 
-![Screenshot](https://i.ibb.co/6w3mTVG/Header-Screenshot.png)
+![Screenshot](https://i.ibb.co/c8bkGHM/Header-Screenshot.png)
 
 *This extension is currently in a beta release state.*
 
@@ -14,16 +14,16 @@ Visit our [Documentation](https://www.noesisengine.com/docs/Gui.Core.Index.html)
 
 ## XAML Features
 
-- **Completion support for nodes and properties**     
+**Completion support for nodes and properties**     
 ![Completion](https://i.ibb.co/mvGw5Yf/Feature-Completion.gif)
 
-- **Syntax and type error reporting**                 
-![Color decorators](https://i.ibb.co/kSFKVYw/Feature-Error.png)
+**Syntax and type error reporting**                 
+![Error reporting](https://i.ibb.co/kSFKVYw/Feature-Error.png)
 
-- **Live previews**                                 
+**Live previews**                                 
 ![Previews](https://i.ibb.co/nwY90JF/Feature-Previews.gif)
 
-- **Color decorators and pickers for Brush attribute properties**
+**Color decorators and pickers for Brush attribute properties**
 ![Color decorators](https://i.ibb.co/hZMnkjJ/Feature-Color.png)
 
 ## Requirements
