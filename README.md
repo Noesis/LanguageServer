@@ -2,7 +2,7 @@
 
 This extension provides a rich editing experience for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language, using the NoesisGUI language server.
 
-![Screenshot](https://i.ibb.co/Mgcxg01/Header-Screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/HeaderScreenshot.png)
 
 *This extension is currently in a beta release state.*
 
@@ -15,16 +15,16 @@ Visit our [Documentation](https://www.noesisengine.com/docs/Gui.Core.Index.html)
 ## XAML Features
 
 **Completion support for nodes and properties**     
-![Completion](https://i.ibb.co/mvGw5Yf/Feature-Completion.gif)
+![Completion](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/FeatureCompletion.gif)
 
 **Syntax and type error reporting**                 
-![Error reporting](https://i.ibb.co/kSFKVYw/Feature-Error.png)
+![Error reporting](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/FeatureError.png)
 
 **Live previews**                                 
-![Previews](https://i.ibb.co/nwY90JF/Feature-Previews.gif)
+![Previews](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/FeaturePreviews.gif)
 
 **Color decorators and pickers for Brush attribute properties**
-![Color decorators](https://i.ibb.co/hZMnkjJ/Feature-Color.png)
+![Color decorators](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/FeatureColor.png)
 
 ## Requirements
 
