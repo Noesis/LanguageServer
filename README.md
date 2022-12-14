@@ -1,8 +1,8 @@
 # NoesisGUI XAML extension for Visual Studio Code
 
-Rich support for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language. 
+This extension provides a rich editing experience for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language, using the NoesisGUI language server.
 
-![Screenshot](https://i.ibb.co/c8bkGHM/Header-Screenshot.png)
+![Screenshot](https://i.ibb.co/WnKncwC/Header-Screenshot.png)
 
 *This extension is currently in a beta release state.*
 
