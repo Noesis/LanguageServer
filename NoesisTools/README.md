@@ -2,7 +2,7 @@
 
 This extension provides a rich editing experience for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language, using the NoesisGUI language server.
 
-![Screenshot](https://i.ibb.co/WnKncwC/Header-Screenshot.png)
+![Screenshot](https://i.ibb.co/Mgcxg01/Header-Screenshot.png)
 
 *This extension is currently in a beta release state.*
 
