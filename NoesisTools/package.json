@@ -5,11 +5,11 @@
 	"displayName": "NoesisGUI XAML Tools",
 	"author": "Noesis Technologies S.L.",
 	"license": "",
-	"version": "0.0.27",
+	"version": "0.0.28",
 	"icon": "resources/images/favicon.png",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/NoesisGUI/LanguageServer"
+		"url": "https://github.com/Noesis/LanguageServer"
 	},
 	"bugs": {
 		"url": "https://www.noesisengine.com/bugs/"
