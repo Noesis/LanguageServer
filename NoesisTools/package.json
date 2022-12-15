@@ -5,7 +5,7 @@
 	"displayName": "NoesisGUI XAML Tools",
 	"author": "Noesis Technologies S.L.",
 	"license": "",
-	"version": "0.0.26",
+	"version": "0.0.27",
 	"icon": "resources/images/favicon.png",
 	"repository": {
 		"type": "git",
@@ -110,8 +110,8 @@
 				],
 				"configuration": "./config/xaml.language-configuration.json",
 				"icon": {
-					"light": "./resources/images/favicon.png",
-					"dark": "./resources/images/favicon.png"
+					"light": "./resources/images/xamlicon.png",
+					"dark": "./resources/images/xamlicon.png"
 				}
 			}
 		],
