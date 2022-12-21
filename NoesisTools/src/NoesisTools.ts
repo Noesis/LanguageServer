@@ -91,7 +91,7 @@ export class NoesisTools {
 			});
 		});*/
 
-		vscode.languages.setLanguageConfiguration('xaml', getXamlConfiguration());
+		//vscode.languages.setLanguageConfiguration('xaml', getXamlConfiguration());
 
 		this.createLanguageClient();	
 
@@ -154,12 +154,15 @@ export class NoesisTools {
 				noesisTools.previewPanel = vscode.window.createWebviewPanel(
 					'noesisPreview',
 					"XAML Preview",
-					vscode.ViewColumn.One,
+					{
+						preserveFocus: true,
+						viewColumn: vscode.ViewColumn.Two
+					},
 					{
 						// Enable scripts in the webview
 						enableScripts: true
 					}
-				);						
+				);					
 	
 				noesisTools.previewPanel.onDidDispose(
 					() => {
