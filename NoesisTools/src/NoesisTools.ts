@@ -409,9 +409,13 @@ export class NoesisTools {
 			{
 				serverExecPath = languageServerPath;
 			}
-			else
+			else if (process.platform === "win32")
 			{				
 				serverExecPath = path.join(ext.extensionPath, 'bin', 'windows_x86_64', 'App.LanguageServerLauncher.exe');
+			}
+			else
+			{			
+				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher');
 			}
 			
 			const configArgs: string[] = getConfiguration('languageServerArgs');	
