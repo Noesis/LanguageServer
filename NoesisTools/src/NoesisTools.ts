@@ -11,7 +11,6 @@ import { getConfiguration } from './Utils';
 import { activateAutoInsertion, AutoInsertResult, HasCompletionItemsResult } from './autoInsertion';
 import { activateRunDiagnostics } from './runDiagnostics';
 import { Func } from 'mocha';
-import { getXamlConfiguration  } from './languageConfiguration';
 
 interface AutoInsertParams {
 	/**
@@ -81,17 +80,6 @@ export class NoesisTools {
 
 	public async init() {
 		let commands = vscode.commands.getCommands();
-
-		/*commands.then((values) => {
-			values.forEach(element => {
-				if (element.includes('trigger') || element.includes('suggest'))
-				{
-					logger.log('##################', element);					
-				}
-			});
-		});*/
-
-		//vscode.languages.setLanguageConfiguration('xaml', getXamlConfiguration());
 
 		this.createLanguageClient();	
 
