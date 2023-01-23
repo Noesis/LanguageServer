@@ -258,18 +258,37 @@ export class NoesisTools {
 	
 		const updateWebview = async function () {
 			const activeEditor = vscode.window.activeTextEditor;
-			if (activeEditor && activeEditor.document.languageId == "xaml") {							
-				const tmpDir = os.tmpdir();
-				let previewFilePath = activeEditor.document.uri.fsPath;
-				while (previewFilePath.indexOf("\\") !== -1)
+			if (activeEditor && activeEditor.document.languageId == "xaml") {	
+
+				let tmpDir;
+				let sep;
+				if (process.platform === "win32")
 				{
-					previewFilePath = previewFilePath.replace("\\", "-_");
+					tmpDir = os.tmpdir();
+					sep = "\\";
+				}
+				else
+				{
+					tmpDir = "/tmp";					
+					sep = "/";
+				}
+				let previewFilePath = activeEditor.document.uri.fsPath;				
+				while (previewFilePath.indexOf(sep) !== -1)
+				{
+					if (previewFilePath.indexOf(sep) === 0)
+					{
+						previewFilePath = previewFilePath.replace(sep, "");
+					}
+					else
+					{
+						previewFilePath = previewFilePath.replace(sep, "-_");
+					}
 				}
 				while (previewFilePath.indexOf(":") !== -1)
 				{
 					previewFilePath = previewFilePath.replace(":", "_");
 				}
-				previewFilePath = `${tmpDir}\\noesis\\${previewFilePath}.png`;
+				previewFilePath = `${tmpDir}${sep}noesis${sep}${previewFilePath}.png`;
 				imageUri = previewFilePath;
 				//imageUri = Uri.file(previewFilePath);
 			}
