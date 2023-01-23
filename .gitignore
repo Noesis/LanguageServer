@@ -44,3 +44,5 @@ configurations/tmp.txt
 configurations/test.py
 .vscode-test
 workspace.code-workspace
+.DS_Store
+NoesisTools/package-lock.json
