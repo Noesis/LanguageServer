@@ -46,3 +46,4 @@ configurations/test.py
 workspace.code-workspace
 .DS_Store
 NoesisTools/package-lock.json
+NoesisTools/bin
