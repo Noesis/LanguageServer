@@ -419,7 +419,9 @@ export class NoesisTools {
 			}
 			
 			const configArgs: string[] = getConfiguration('languageServerArgs');	
-			this._serverProcess = cp.execFile(serverExecPath, configArgs);
+			this._serverProcess = cp.execFile(serverExecPath, configArgs, (error: cp.ExecFileException, stdout: string, stderr: string) => {				
+				logger.log('[client]', `error message: '${error.message}', stdout: '${stdout}', stderr: '${stderr}'`);
+			});
 
 			if (this._serverProcess.stdout != null)
 			{
@@ -443,6 +445,8 @@ export class NoesisTools {
 			{
 				logger.log('[client]', `serverExecPath '${serverExecPath}' has no stdout?`);
 			}
+
+			logger.log('[client]', `platform: '${process.platform}', serverExecPath: '${serverExecPath}'`);
 		}
 
 		this._languageClient = new NoesisLanguageClient(this._context);
