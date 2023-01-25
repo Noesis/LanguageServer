@@ -415,7 +415,7 @@ export class NoesisTools {
 			}
 			else
 			{			
-				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher');
+				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher.app', 'Contents', 'MacOS', 'App.LanguageServerLauncher');
 			}
 			
 			const configArgs: string[] = getConfiguration('languageServerArgs');	
