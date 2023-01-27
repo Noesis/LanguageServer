@@ -378,6 +378,11 @@ export class NoesisTools {
 		{
 			this._languageClientDispose.dispose();
 			this._languageClientDispose = null;
+		}		
+		if (this._serverProcess != null)
+		{
+			this._serverProcess.kill();
+			this._serverProcess = null;
 		}
 	}
 
@@ -414,13 +419,19 @@ export class NoesisTools {
 				serverExecPath = path.join(ext.extensionPath, 'bin', 'windows_x86_64', 'App.LanguageServerLauncher.exe');
 			}
 			else
-			{			
-				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher.app', 'Contents', 'MacOS', 'App.LanguageServerLauncher');
+			{		
+				const fs = require('fs');							
+				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher');
+				//serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher.app', 'Contents', 'MacOS', 'App.LanguageServerLauncher');
+				fs.chmodSync(serverExecPath, 0o755);
 			}
 			
 			const configArgs: string[] = getConfiguration('languageServerArgs');	
-			this._serverProcess = cp.execFile(serverExecPath, configArgs, (error: cp.ExecFileException, stdout: string, stderr: string) => {				
-				logger.log('[client]', `error message: '${error.message}', stdout: '${stdout}', stderr: '${stderr}'`);
+			this._serverProcess = cp.execFile(serverExecPath, configArgs, (error: cp.ExecFileException, stdout: string, stderr: string) => {		
+				if (error)
+				{
+					logger.log('[client]', `Server binary execution error message: '${error.message}', stdout: '${stdout}', stderr: '${stderr}'`);
+				}		
 			});
 
 			if (this._serverProcess.stdout != null)
