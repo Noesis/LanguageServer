@@ -416,13 +416,12 @@ export class NoesisTools {
 			}
 			else if (process.platform === "win32")
 			{				
-				serverExecPath = path.join(ext.extensionPath, 'bin', 'windows_x86_64', 'App.LanguageServerLauncher.exe');
+				serverExecPath = path.join(ext.extensionPath, 'bin', 'windows_x86_64', 'App.LangServerTool.exe');
 			}
 			else
 			{		
 				const fs = require('fs');							
-				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher');
-				//serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LanguageServerLauncher.app', 'Contents', 'MacOS', 'App.LanguageServerLauncher');
+				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LangServerTool');
 				fs.chmodSync(serverExecPath, 0o755);
 			}
 			
