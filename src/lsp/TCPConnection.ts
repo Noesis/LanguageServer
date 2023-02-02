@@ -117,7 +117,7 @@ export class TCPClientConnection extends EventEmitter {
 				this._announcementSocket = announcementSocket;
 				this._announcementSocket.on('message', (buffer, remote) => {				
 					const message = buffer.toString('utf8');
-					const messageStart = 'NoesisGUILanguageServerPort:';
+					const messageStart = 'NoesisGUILangServerPort:';
 					//logger.log('[client]', 'Server broadcast: ', remote.address + ':' + remote.port +' - ' + message);
 					if (!message.startsWith(messageStart))
 					{
