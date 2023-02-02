@@ -41,6 +41,6 @@ Color decorators allow you to see the current color of all Brush attribute prope
 ## System Requirements
 
 - VSCode 1.63.0
-- Windows*
+- Windows or MacOS*
 
-*The extension is packaged with a NoesisGUI language server binary. Currently only Windows is supported, Mac support will be added in a coming release.
+*The extension is packaged with a NoesisGUI language server binary.
