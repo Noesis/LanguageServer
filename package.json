@@ -94,6 +94,11 @@
 					"type": "number",
 					"default": 600,
 					"description": "Milliseconds to wait before generating diagnostics and render previews"
+				},
+				"noesisgui-tools.xamlPreviewRenderTime": {
+					"type": "number",
+					"default": 10,
+					"description": "At what view time, in seconds, the preview is rendered"
 				}
 			}
 		},

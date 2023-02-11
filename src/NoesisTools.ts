@@ -55,6 +55,10 @@ interface RunDiagnosticsParams {
 	 * Preview render height
 	 */
 	previewRenderHeight: integer;
+	/**
+	 * Preview render time
+	 */
+	previewRenderTime: number;
 }
 
 namespace RunDiagnosticsNotification {
@@ -117,9 +121,28 @@ export class NoesisTools {
 			const param: RunDiagnosticsParams = {
 				previewRenderWidth: previewPanelWidth,
 				previewRenderHeight: previewPanelHeight,
+				previewRenderTime: getConfiguration('xamlPreviewRenderTime', 0)
 			};
 			this._languageClient.sendNotification(RunDiagnosticsNotification.type, param);
 		};
+
+		vscode.workspace.onDidChangeConfiguration(event => {
+			const diagnosticsEffected = event.affectsConfiguration("noesisgui-tools.xamlPreviewRenderTime");
+			if (diagnosticsEffected) {
+				diagnosticsRequestor();
+			}
+			const clientAffected = event.affectsConfiguration("noesisgui-tools.createLanguageServerInstance")
+				|| event.affectsConfiguration("noesisgui-tools.languageServerPath")
+				|| event.affectsConfiguration("noesisgui-tools.languageServerArgs")
+				|| event.affectsConfiguration("noesisgui-tools.languageServerHost")
+				|| event.affectsConfiguration("noesisgui-tools.reconnectAutomatically")
+				|| event.affectsConfiguration("noesisgui-tools.reconnectDelay")
+				|| event.affectsConfiguration("noesisgui-tools.reconnectAttempts");
+			if (clientAffected)
+			{
+				this.createLanguageClient();
+			}
+		})
 	
 		this._context.subscriptions.push(activateRunDiagnostics(diagnosticsRequestor, this));
 
