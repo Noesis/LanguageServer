@@ -26,7 +26,6 @@ export class TCPClientConnection extends EventEmitter {
 	
 	private _port: number;
 	private _socket: Socket = null;
-	private _announcementSocket: dgram.Socket = null;
 	private _status : TCPConnectionStatus = TCPConnectionStatus.WAITINGFORSERVER;
 	private _statusChangedCallbacks: ((value : TCPConnectionStatus)=>void)[] = [];
 
@@ -49,11 +48,6 @@ export class TCPClientConnection extends EventEmitter {
 			this._socket.destroy(error);
 			this._socket = null;
 		}
-		if (this._announcementSocket != null)
-		{
-			this._announcementSocket.close();
-			this._announcementSocket = null;
-		}
 	}
 
 	public addStatusListener(callback: (v : TCPConnectionStatus)=>void) {
@@ -70,11 +64,11 @@ export class TCPClientConnection extends EventEmitter {
 	}
 
 	async connect(host: string, port: number):Promise<void> {
+		this.disconnect();
 		this._port = port;
+		this.status = TCPConnectionStatus.PENDING;
 		return new Promise((resolve, reject) => {
-			this.destroyCurrentSocket();				
 								
-			this.status = TCPConnectionStatus.PENDING;
 			const socket = new Socket();
 			socket.connect(port, host);
 			socket.on('connect', ()=>{ this.onConnect(socket); resolve(); });
@@ -85,7 +79,10 @@ export class TCPClientConnection extends EventEmitter {
 	}
 
 	public disconnect(error?: Error) {
-		this.destroyCurrentSocket(error);
+		if (this.status != TCPConnectionStatus.WAITINGFORSERVER && this.status != TCPConnectionStatus.DISCONNECTED)
+		{
+			this.destroyCurrentSocket(error);
+		}
 	}
 
 	protected onConnect(socket: Socket) {

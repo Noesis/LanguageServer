@@ -84,6 +84,7 @@ export class NoesisTools {
 	private _serverProcess: cp.ChildProcess;
 	private _announcementSocket: dgram.Socket = null;
 	private _announcementMessage: AnnouncementMessage;
+	private _hadExternalConnection: boolean = false;
 	public previewPanel: vscode.WebviewPanel = null;
 	public runDiagnosticsCallback: Function;
 
@@ -368,9 +369,7 @@ export class NoesisTools {
 				noesisTools.previewPanel.webview.html = getEmptyWebviewContent("View a XAML document to begin previewing.");
 			}
 			
-		};		
-
-		this.createLanguageClient();	
+		};			
 
 		const bindSocket = (port: integer, callback: (announcementSocket: dgram.Socket, success: boolean) => void) : dgram.Socket => {
 			const announcementSocket = dgram.createSocket('udp4');
@@ -422,6 +421,11 @@ export class NoesisTools {
 					return;
 				}
 				
+				if (!this._hadExternalConnection)
+				{
+					this._hadExternalConnection = announcementMessage.serverName != "Embedded";
+				}
+
 				this._announcementMessage = announcementMessage;
 
 				if (isNaN(this._announcementMessage.serverPort))
@@ -433,7 +437,12 @@ export class NoesisTools {
 								
 				logger.log('[client]', `Connecting to serverName: '${this._announcementMessage.serverName}', serverPort: ${this._announcementMessage.serverPort}, serverPriority: ${this._announcementMessage.serverPriority}`);
 
-				this.createLanguageClient();
+				if (this._languageClient == null
+					|| this._languageClient.connectionStatus == TCPConnectionStatus.PENDING
+					|| this._languageClient.connectionStatus == TCPConnectionStatus.CONNECTED)
+				{
+					this.createLanguageClient();
+				}
 				this._languageClient.connect(this._announcementMessage.serverPort);
 			});
 
@@ -451,7 +460,9 @@ export class NoesisTools {
 		this._intervals.push(setInterval(updateWebview, 100)) ;						
 		this._intervals.push(setInterval(() => {
 			this.retryConnectCallback();
-		}, getConfiguration('reconnectDelay'))) ;
+		}, getConfiguration('reconnectDelay')));
+
+		this.createLanguageClient();
 	}	
 
 	public getConnectionStatus() : TCPConnectionStatus
@@ -514,8 +525,7 @@ export class NoesisTools {
 			this._serverProcess = null;
 		}
 		
-		if (getConfiguration('createLanguageServerInstance') && (this._announcementMessage == null 
-			|| this._announcementMessage.serverName == "" || this._announcementMessage.serverName == "Embedded"))
+		if (getConfiguration('createLanguageServerInstance') && !this._hadExternalConnection)
 		{
 			let ext = vscode.extensions.getExtension('NoesisTechnologies.noesisgui-tools')
 			let serverExecPath: string;
@@ -620,7 +630,8 @@ export class NoesisTools {
 					this._languageClientDispose = this._languageClient.start();		
 				}
 				break;
-			case TCPConnectionStatus.DISCONNECTED:			
+			case TCPConnectionStatus.DISCONNECTED:	
+				this._announcementMessage = null;		
 				if (this._languageClient.hasStarted)
 				{
 					logger.log('[client]', `Client disconnected`);
@@ -631,7 +642,7 @@ export class NoesisTools {
 		}
 	}
 
-	private retryConnectCallback() {
+	private retryConnectCallback() {		
 		if (this._languageClient.connectionStatus != TCPConnectionStatus.DISCONNECTED) {
 			return		
 		}
