@@ -24,9 +24,10 @@ export class TCPClientConnection extends EventEmitter {
 	public readonly reader: TCPMessageReader = new TCPMessageReader(this);
 	public readonly writer: TCPMessageWriter = new TCPMessageWriter(this);
 	
+	private _port: number;
 	private _socket: Socket = null;
 	private _announcementSocket: dgram.Socket = null;
-	private _status : TCPConnectionStatus = TCPConnectionStatus.DISCONNECTED;
+	private _status : TCPConnectionStatus = TCPConnectionStatus.WAITINGFORSERVER;
 	private _statusChangedCallbacks: ((value : TCPConnectionStatus)=>void)[] = [];
 
 	public get status() : TCPConnectionStatus { return this._status; }
@@ -39,7 +40,7 @@ export class TCPClientConnection extends EventEmitter {
 		}
 	}
 
-	public get port() : integer { return 0; }
+	public get port() : integer { return this._port; }
 
 	protected destroyCurrentSocket(error?: Error) {
 		this.status = TCPConnectionStatus.DISCONNECTED;
@@ -58,6 +59,7 @@ export class TCPClientConnection extends EventEmitter {
 	public addStatusListener(callback: (v : TCPConnectionStatus)=>void) {
 		if (this._statusChangedCallbacks.indexOf(callback) == -1) {
 			this._statusChangedCallbacks.push(callback);
+			callback(this.status);
 		}
 	}
 
@@ -67,87 +69,18 @@ export class TCPClientConnection extends EventEmitter {
 		}
 	}
 
-	async connect(host:string):Promise<void> {
+	async connect(host: string, port: number):Promise<void> {
+		this._port = port;
 		return new Promise((resolve, reject) => {
 			this.destroyCurrentSocket();				
-			
-			this.status = TCPConnectionStatus.WAITINGFORSERVER;				
-
-			const bindSocket = (port: integer, callback: (announcementSocket: dgram.Socket, success: boolean) => void) : dgram.Socket => {
-				const announcementSocket = dgram.createSocket('udp4');
-
-				announcementSocket.on('error', (error) => {
-					logger.log(error);
-					callback(null, false);
-				});
-
-				announcementSocket.on('listening', () => {
-					announcementSocket.setBroadcast(true);
-					callback(announcementSocket, true);
-				});
-
-				announcementSocket.bind(port);
-
-				return announcementSocket;
-			};	
-			
-			const udpPortRangeBegin = 16629;
-			const udpPortRangeEnd = 16649;
-
-			let port = udpPortRangeBegin;	
-
-			const socketBindCallback = (announcementSocket: dgram.Socket, success: boolean) => {			
-
-				if (!success)
-				{
-					port++;
-					if (port > udpPortRangeEnd)
-					{
-						let errorMessage: string = `Failed to bind UDP announcement port between range ${udpPortRangeBegin} and ${udpPortRangeEnd}`;
-						logger.log('[client]', errorMessage);
-						vscode.window.showErrorMessage(errorMessage);
-						this.disconnect(new Error(errorMessage));
-						return;
-					}
-					bindSocket(port, socketBindCallback);
-					return;
-				}
-
-				logger.log('[client]', `Bound to UDP announcement port ${port}`);
-				this._announcementSocket = announcementSocket;
-				this._announcementSocket.on('message', (buffer, remote) => {				
-					const message = buffer.toString('utf8');
-					const messageStart = 'NoesisGUILangServerPort:';
-					//logger.log('[client]', 'Server broadcast: ', remote.address + ':' + remote.port +' - ' + message);
-					if (!message.startsWith(messageStart))
-					{
-						logger.log('[client]', `Error: invalid server broadcast message '${message}'`);						
-						vscode.window.showErrorMessage('Invalid connection broadcast from NoesisGUI server');
-						return;
-					}
-					const port = parseInt(message.substring(messageStart.length));
-					if (isNaN(port))
-					{
-						logger.log('[client]', `Error: invalid server broadcast port '${message}'`);
-						vscode.window.showErrorMessage('Invalid connection port broadcast from NoesisGUI server');
-						return;
-					}	
-					
-					this._announcementSocket.close();
-					this._announcementSocket = null;
-					
-					this.status = TCPConnectionStatus.PENDING;
-					const socket = new Socket();
-					socket.connect(port, host);
-					socket.on('connect', ()=>{ this.onConnect(socket); resolve(); });
-					socket.on('data', this.onReceiveMessage.bind(this));
-					socket.on('end', this.onDisconnect.bind(this));
-					socket.on('close', this.onDisconnect.bind(this));
-				});
-
-			};
-
-			bindSocket(port, socketBindCallback);		
+								
+			this.status = TCPConnectionStatus.PENDING;
+			const socket = new Socket();
+			socket.connect(port, host);
+			socket.on('connect', ()=>{ this.onConnect(socket); resolve(); });
+			socket.on('data', this.onReceiveMessage.bind(this));
+			socket.on('end', this.onDisconnect.bind(this));
+			socket.on('close', this.onDisconnect.bind(this));		
 		});
 	}
 

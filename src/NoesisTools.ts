@@ -5,6 +5,7 @@ import logger from './logger';
 import * as os from 'os';
 import * as cp from 'child_process'
 import * as path from 'path'
+import * as dgram from 'dgram';
 import NoesisLanguageClient from './lsp/NoesisLanguageClient';
 import { TCPConnectionStatus } from './lsp/TCPConnection';
 import { getConfiguration } from './Utils';
@@ -25,6 +26,12 @@ interface AutoInsertParams {
 	 * The position inside the text document.
 	 */
 	position: LspPosition;
+}
+
+interface AnnouncementMessage {	
+	serverPort: number;
+	serverName: string;
+	serverPriority: number;
 }
 
 namespace AutoInsertRequest {
@@ -75,6 +82,8 @@ export class NoesisTools {
 	private _noesisPath: Uri = null;
 	private _intervals: Array<NodeJS.Timeout> = new Array<NodeJS.Timeout>();
 	private _serverProcess: cp.ChildProcess;
+	private _announcementSocket: dgram.Socket = null;
+	private _announcementMessage: AnnouncementMessage;
 	public previewPanel: vscode.WebviewPanel = null;
 	public runDiagnosticsCallback: Function;
 
@@ -84,8 +93,6 @@ export class NoesisTools {
 
 	public async init() {
 		let commands = vscode.commands.getCommands();
-
-		this.createLanguageClient();	
 
 		vscode.commands.registerCommand('noesisTool.checkConnectionStatus', this.checkConnectionStatus.bind(this));
 
@@ -142,7 +149,7 @@ export class NoesisTools {
 			{
 				this.createLanguageClient();
 			}
-		})
+		});
 	
 		this._context.subscriptions.push(activateRunDiagnostics(diagnosticsRequestor, this));
 
@@ -160,6 +167,11 @@ export class NoesisTools {
 		});
 
 		vscode.commands.registerCommand('noesisTool.openPreview', async function (event) {
+			if (noesisTools._announcementMessage != null && noesisTools._announcementMessage.serverName != "Embedded")
+			{				
+				vscode.window.showInformationMessage(`XAML preview is only available on the Embedded language server`);
+				return;
+			}
 			if (noesisTools.previewPanel == null)
 			{
 				noesisTools.previewPanel = vscode.window.createWebviewPanel(
@@ -356,8 +368,78 @@ export class NoesisTools {
 				noesisTools.previewPanel.webview.html = getEmptyWebviewContent("View a XAML document to begin previewing.");
 			}
 			
+		};		
+
+		this.createLanguageClient();	
+
+		const bindSocket = (port: integer, callback: (announcementSocket: dgram.Socket, success: boolean) => void) : dgram.Socket => {
+			const announcementSocket = dgram.createSocket('udp4');
+
+			announcementSocket.on('error', (error) => {
+				logger.log(error);
+				callback(null, false);
+			});
+
+			announcementSocket.on('listening', () => {
+				announcementSocket.setBroadcast(true);
+				callback(announcementSocket, true);
+			});
+
+			announcementSocket.bind(port);
+
+			return announcementSocket;
+		};	
+		
+		const udpPortRangeBegin = 16629;
+		const udpPortRangeEnd = 16649;
+
+		let udpPort = udpPortRangeBegin;	
+
+		const socketBindCallback = (announcementSocket: dgram.Socket, success: boolean) => {			
+
+			if (!success)
+			{
+				udpPort++;
+				if (udpPort > udpPortRangeEnd)
+				{
+					let errorMessage: string = `Failed to bind UDP announcement port between range ${udpPortRangeBegin} and ${udpPortRangeEnd}`;
+					logger.log('[client]', errorMessage);
+					vscode.window.showErrorMessage(errorMessage);
+					return;
+				}
+				bindSocket(udpPort, socketBindCallback);
+				return;
+			}
+
+			logger.log('[client]', `Bound to UDP announcement port ${udpPort}`);
+			this._announcementSocket = announcementSocket;
+			this._announcementSocket.on('message', (buffer, remote) => {				
+				const message = buffer.toString('utf8');
+				const announcementMessage: AnnouncementMessage = JSON.parse(message);
+
+				if (this._announcementMessage != null && this._announcementMessage.serverPriority <= announcementMessage.serverPriority)
+				{
+					return;
+				}
+				
+				this._announcementMessage = announcementMessage;
+
+				if (isNaN(this._announcementMessage.serverPort))
+				{
+					logger.log('[client]', `Error: invalid server broadcast port '${message}'`);
+					vscode.window.showErrorMessage('Invalid connection port broadcast from NoesisGUI server');
+					return; 
+				}		
+								
+				logger.log('[client]', `Connecting to serverName: '${this._announcementMessage.serverName}', serverPort: ${this._announcementMessage.serverPort}, serverPriority: ${this._announcementMessage.serverPriority}`);
+
+				this.createLanguageClient();
+				this._languageClient.connect(this._announcementMessage.serverPort);
+			});
+
 		};
 
+		bindSocket(udpPort, socketBindCallback);
 		
 		const openRenderPreview = getConfiguration('openRenderPreviewOnStart');
 		if (openRenderPreview)
@@ -402,6 +484,11 @@ export class NoesisTools {
 			this._languageClientDispose.dispose();
 			this._languageClientDispose = null;
 		}		
+		if (this._announcementSocket != null)
+		{
+			this._announcementSocket.close();
+			this._announcementSocket = null;
+		}
 		if (this._serverProcess != null)
 		{
 			this._serverProcess.kill();
@@ -427,7 +514,8 @@ export class NoesisTools {
 			this._serverProcess = null;
 		}
 		
-		if (getConfiguration('createLanguageServerInstance'))
+		if (getConfiguration('createLanguageServerInstance') && (this._announcementMessage == null 
+			|| this._announcementMessage.serverName == "" || this._announcementMessage.serverName == "Embedded"))
 		{
 			let ext = vscode.extensions.getExtension('NoesisTechnologies.noesisgui-tools')
 			let serverExecPath: string;
@@ -496,10 +584,10 @@ export class NoesisTools {
 		const port = this._languageClient.port;
 		switch (this._languageClient.connectionStatus) {
 			case TCPConnectionStatus.PENDING:
-				vscode.window.showInformationMessage(`Connecting to NoesisGUI language server at ${host}:${port}`);
+				vscode.window.showInformationMessage(`Connecting to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`);
 				break;
 			case TCPConnectionStatus.CONNECTED:
-				vscode.window.showInformationMessage(`Connected to NoesisGUI language server at ${host}:${port}`);
+				vscode.window.showInformationMessage(`Connected to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`);
 				break;
 			case TCPConnectionStatus.DISCONNECTED:
 				this.createLanguageClient();
@@ -517,21 +605,16 @@ export class NoesisTools {
 		const port = this._languageClient.port;
 		switch (status) {
 			case TCPConnectionStatus.WAITINGFORSERVER:
-				this._connectionStatusBar.text = `$(sync) Waiting for server`;
+				this._connectionStatusBar.text = `$(sync) XAML`;
 				this._connectionStatusBar.tooltip = `Waiting for announcement from NoesisGUI language server`;
 				break;
 			case TCPConnectionStatus.PENDING:
-				if (this._reconnectAttemptCount > 0) {
-					this._connectionStatusBar.text = `$(sync) Connecting (retry #${this._reconnectAttemptCount})`;
-				}
-				else {
-					this._connectionStatusBar.text = `$(sync) Connecting`;
-				}
-				this._connectionStatusBar.tooltip = `Connecting to NoesisGUI language server at ${host}:${port}`;
+				this._connectionStatusBar.text = `$(sync) XAML [${this._announcementMessage.serverName}]`;
+				this._connectionStatusBar.tooltip = `Connecting to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`;
 				break;
 			case TCPConnectionStatus.CONNECTED:
-				this._connectionStatusBar.text = `$(check) Connected`;
-				this._connectionStatusBar.tooltip = `Connected to NoesisGUI language server at ${host}:${port}`;				
+				this._connectionStatusBar.text = `$(check) XAML [${this._announcementMessage.serverName}]`;
+				this._connectionStatusBar.tooltip = `Connected to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`;				
 				this.runDiagnosticsCallback();
 				if (!this._languageClient.hasStarted) {
 					this._languageClientDispose = this._languageClient.start();		
@@ -562,7 +645,7 @@ export class NoesisTools {
 		if (shouldRetry && this._reconnectAttemptCount < maxRetryCount) {
 			this._reconnectAttemptCount++;
 
-			this._languageClient.connect();
+			this._languageClient.connect(this._announcementMessage.serverPort);
 			this._autoReconnect = true;
 			return;
 		}
@@ -578,7 +661,7 @@ export class NoesisTools {
 				if (item == 'Retry') {
 					this._reconnectAttemptCount = 0;
 					this._autoReconnect = true;
-					this._languageClient.connect();
+					this._languageClient.connect(this._announcementMessage.serverPort);
 				}
 			});
 		}

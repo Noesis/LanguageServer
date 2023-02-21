@@ -42,9 +42,9 @@ export default class NoesisLanguageClient extends LanguageClient {
 		this._languageServerConnection.on('send_message', this.onSendingMessage.bind(this));		
 	}
 
-	connect() {	
+	connect(port: number) {	
 		let host = getConfiguration('languageServerHost', '127.0.0.1');
-		this._languageServerConnection.connect(host);
+		this._languageServerConnection.connect(host, port);
 	}
 
 	start(): vscode.Disposable {
