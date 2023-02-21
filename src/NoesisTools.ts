@@ -605,15 +605,15 @@ export class NoesisTools {
 		const port = this._languageClient.port;
 		switch (status) {
 			case TCPConnectionStatus.WAITINGFORSERVER:
-				this._connectionStatusBar.text = `$(sync) XAML`;
+				this._connectionStatusBar.text = `$(sync) Noesis`;
 				this._connectionStatusBar.tooltip = `Waiting for announcement from NoesisGUI language server`;
 				break;
 			case TCPConnectionStatus.PENDING:
-				this._connectionStatusBar.text = `$(sync) XAML [${this._announcementMessage.serverName}]`;
+				this._connectionStatusBar.text = `$(sync) Noesis [${this._announcementMessage.serverName}]`;
 				this._connectionStatusBar.tooltip = `Connecting to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`;
 				break;
 			case TCPConnectionStatus.CONNECTED:
-				this._connectionStatusBar.text = `$(check) XAML [${this._announcementMessage.serverName}]`;
+				this._connectionStatusBar.text = `$(check) Noesis [${this._announcementMessage.serverName}]`;
 				this._connectionStatusBar.tooltip = `Connected to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`;				
 				this.runDiagnosticsCallback();
 				if (!this._languageClient.hasStarted) {
