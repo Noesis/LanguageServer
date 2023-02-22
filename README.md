@@ -38,9 +38,27 @@ Color decorators allow you to see the current color of all Brush attribute prope
 
 ![Color decorators](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/FeatureColor.png)
 
+## Language Server
+
+The NoesisGUI language server provides capabilities including diagnostics and completion.
+
+**Embedded**
+
+The extension comes packaged with an embedded language server, which will start automatically when a XAML file is detected. This embedded server provides all capabilities, but it is limited to the native NoesisGUI types. For custom type support, an external language server is needed.
+
+**External**
+
+An external language server provides capabilities and type information from the application it is running in. If NoesisGUI XAML Tools detects an external language server, it will automatically connect to it. We provide an external language server in our Unreal plugin and Unity package, allowing you to use edit XAML documents for those engines while their Editors are open. 
+
+**LanguageServer Status**
+
+The extension provides a server status in the bottom right status bar. When connected to a language server, this will show the name of the language server (e.g. Embedded, Unity, or Unreal).
+
+## Known Issues
+
+- To start the language server in the Unity Editor, you need load a NoesisGUI view (you can do this by opening a NoesisGUI sample, and clicking play). 
+
 ## System Requirements
 
 - VSCode 1.63.0
-- Windows or MacOS*
-
-*The extension is packaged with a NoesisGUI language server binary.
+- Windows or MacOS
