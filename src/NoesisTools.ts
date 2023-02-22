@@ -308,7 +308,11 @@ export class NoesisTools {
 					tmpDir = "/tmp";					
 					sep = "/";
 				}
-				let previewFilePath = activeEditor.document.uri.fsPath;				
+				let previewFilePath = activeEditor.document.uri.fsPath;
+				if (activeEditor.document.uri.scheme == "untitled")
+				{
+					previewFilePath = `a:${sep}untitled:` + previewFilePath;
+				}
 				while (previewFilePath.indexOf(sep) !== -1)
 				{
 					if (previewFilePath.indexOf(sep) === 0)
