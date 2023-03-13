@@ -170,7 +170,7 @@ export class NoesisTools {
 		vscode.commands.registerCommand('noesisTool.openPreview', async function (event) {
 			if (noesisTools._announcementMessage != null && noesisTools._announcementMessage.serverName != "Embedded")
 			{				
-				vscode.window.showInformationMessage(`XAML preview is only available on the Embedded language server`);
+				vscode.window.showInformationMessage(`Preview is not available on external language servers (Unity / Unreal)`);
 				return;
 			}
 			if (noesisTools.previewPanel == null)
