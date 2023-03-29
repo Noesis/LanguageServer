@@ -4,8 +4,6 @@ This extension provides a rich editing experience for [NoesisGUI](https://www.no
 
 ![Screenshot](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/HeaderScreenshot.png)
 
-*This extension is currently in a beta release state.*
-
 ## NoesisGUI
 
 NoesisGUI is a lightweight cross-platform user interface library optimized for games and real-time applications. It brings the power of XAML and WPF to Unity, Unreal and proprietary engines.
@@ -40,11 +38,13 @@ Color decorators allow you to see the current color of all Brush attribute prope
 
 ## Language Server
 
-The NoesisGUI language server provides capabilities including diagnostics and completion.
+Visual Studio Code uses language servers to provide "intellisense" capabilities, including diagnostics and completion, for languages. The NoesisGUI language server, which has been created using the NoesisGUI library, provides these capabilities for XAML documents. With NoesisGUI XAML Tools you can either use the embedded NoesisGUI language server, or an external server such as those provided with our Unity and Unreal plugins. When editing XAML documents a server status is shown in the bottom right status bar. When connected, this will show the name of the language server.
+
+![Language Server Status](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/LangServerStatus.png)
 
 **Embedded**
 
-The extension comes packaged with an embedded language server, which will start automatically when a XAML file is detected. This embedded server provides all capabilities, but it is limited to the native NoesisGUI types. For custom type support, an external language server is needed.
+The extension comes packaged with an embedded language server, which will start automatically when a XAML file is detected. This embedded server provides all capabilities, but it is limited to the native NoesisGUI types. For custom type support, an external language server is required.
 
 **External (Unity and Unreal)**
 
@@ -52,11 +52,6 @@ An external language server provides capabilities and type information from the 
 
 Note: XAML Preview is not available when connected to Unity or Unreal language servers.
 
-**LanguageServer Status**
-
-The extension provides a server status in the bottom right status bar. When connected to a language server, this will show the name of the language server (e.g. Embedded, Unity, or Unreal).
-
-![LanguageServer Status](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/LangServerStatus.png)
 
 ## System Requirements
 
