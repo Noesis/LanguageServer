@@ -1,6 +1,6 @@
 # NoesisGUI XAML Tools for Visual Studio Code
 
-This extension provides a rich editing experience for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language, using the NoesisGUI language server. The latest release of NoesisGUI XAML Tools can be installed from the [Visual Studio Code Marketplace](https://noesisengine.com/vscode).
+This extension provides a rich editing experience for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language, using the NoesisGUI language server. The latest release of XAML Tools can be installed from the [Visual Studio Code Marketplace](https://noesisengine.com/vscode).
 
 ![Screenshot](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/HeaderScreenshot.png)
 
@@ -14,13 +14,13 @@ Visit our [Documentation](https://www.noesisengine.com/docs/Gui.Core.Index.html)
 
 **Completion support for nodes and properties**  
 
-Start typing a XAML tag or attribute and NoesisGUI XAML Tools will show you a list of available symbols (controls, properties, etc.) at that location.
+Start typing a XAML tag or attribute and XAML Tools will show you a list of available symbols (controls, properties, etc.) at that location.
    
 ![Completion](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/FeatureCompletion.gif)
 
 **Syntax and semantic error reporting**                 
 
-NoesisGUI XAML Tools shows you syntax and semantic errors as you type.
+XAML Tools shows you syntax and semantic errors as you type.
 
 ![Error reporting](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/FeatureError.png)
 
@@ -38,20 +38,17 @@ Color decorators allow you to see the current color of all Brush attribute prope
 
 ## Language Server
 
-Visual Studio Code uses language servers to provide "intellisense" capabilities, including diagnostics and completion, for languages. The NoesisGUI language server, which has been created using the NoesisGUI library, provides these capabilities for XAML documents. With NoesisGUI XAML Tools you can either use the embedded NoesisGUI language server, or an external server such as those provided with our Unity and Unreal plugins. When editing XAML documents a server status is shown in the bottom right status bar. When connected, this will show the name of the language server.
+XAML Tools connects to a NoesisGUI language server, which is built on the NoesisGUI library, to provide language capabilities for XAML. The language server also provides information on supported types, which includes controls, extensions, converters, and view models.
+
+Our Unreal and Unity plugins contain language servers, which are active while the Unreal/Unity editor is running. An editor language server will support all of the types available in the current Unreal/Unity project. XAML Tools will prioritise connecting to an editor language server, this process is automatic.
+
+If no active language server is found, XAML Tools will connect to an embedded language server. This embedded language server is limited to native NoesisGUI types, custom classes are not supported.
+
+You can verify which language server you are currently connected to by checking the status bar on the bottom right of the VSCode window.
 
 ![Language Server Status](https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/LangServerStatus.png)
 
-**Embedded**
-
-The extension comes packaged with an embedded language server, which will start automatically when a XAML file is detected. This embedded server provides all capabilities, but it is limited to the native NoesisGUI types. For custom type support, an external language server is required.
-
-**External (Unity and Unreal)**
-
-An external language server provides capabilities and type information from the application it is running in. If NoesisGUI XAML Tools detects an external language server, it will automatically connect to it. We provide an external language server in our [Unreal](https://www.noesisengine.com/docs/Gui.Core.UnrealTutorial.html) plugin and [Unity](https://www.noesisengine.com/docs/Gui.Core.Unity3DTutorial.html) package, allowing you to use edit XAML documents for those engines while their Editors are open. 
-
 Note: XAML Preview is not available when connected to Unity or Unreal language servers.
-
 
 ## System Requirements
 
