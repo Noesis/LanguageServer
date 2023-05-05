@@ -5,7 +5,7 @@
 	"displayName": "NoesisGUI XAML Tools",
 	"author": "Noesis Technologies S.L.",
 	"license": "",
-	"version": "99.0.3",
+	"version": "99.0.4",
 	"icon": "resources/images/favicon.png",
 	"repository": {
 		"type": "git",
