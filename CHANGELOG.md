@@ -1,5 +1,9 @@
 # NoesisGUI XAML Tools Changelog
  
+## [0.0.43] - 2023-06-07
+
+- [LangServer] Added contextual snippet support for attribute keys and values ([#2561](https://www.noesisengine.com/bugs/view.php?id=2561))
+
 ## [0.0.42] - 2023-05-09
 
 - [LangServer] Added Color suggestions for Color properties to LangServer ([#2556](https://www.noesisengine.com/bugs/view.php?id=2556))
