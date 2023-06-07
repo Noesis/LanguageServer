@@ -311,7 +311,7 @@ export class NoesisTools {
 				let previewFilePath = activeEditor.document.uri.fsPath;
 				if (activeEditor.document.uri.scheme == "untitled")
 				{
-					previewFilePath = `a:${sep}untitled:` + previewFilePath;
+					previewFilePath = `zuntitledz${sep}` + previewFilePath;
 				}
 				while (previewFilePath.indexOf(sep) !== -1)
 				{
