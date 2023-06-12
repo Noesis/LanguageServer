@@ -3,6 +3,8 @@
 ## [0.0.43] - 2023-06-07
 
 - [LangServer] Added contextual snippet support for attribute keys and values ([#2561](https://www.noesisengine.com/bugs/view.php?id=2561))
+- [LangServer] Error message Uris no longer contain the "lsfile" scheme
+- [LangServer] Error message Uris for untitled documents now begin with an "/<Untitled>/" folder
 
 ## [0.0.42] - 2023-05-09
 
