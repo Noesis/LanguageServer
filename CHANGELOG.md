@@ -1,5 +1,9 @@
 # NoesisGUI XAML Tools Changelog
  
+## [0.0.44] - 2023-06-13
+
+- [LangServer] Fixed local fonts whose paths begin with "./"
+ 
 ## [0.0.43] - 2023-06-07
 
 - [LangServer] Added contextual snippet support for attribute keys and values ([#2561](https://www.noesisengine.com/bugs/view.php?id=2561))
@@ -15,4 +19,4 @@
 - [LangServer] Fixed completion results being returned for empty documents in LangServer ([#2554](https://www.noesisengine.com/bugs/view.php?id=2554))
 - [LangServer] Implemented full support for color decorators on node attribute properties ([#2566](https://www.noesisengine.com/bugs/view.php?id=2566))
 - [LangServer] Added hardcoded snippets to completion request results in LangServer ([#2561](https://www.noesisengine.com/bugs/view.php?id=2561))
-- [LangServer] Improved the positioning of XAML document errors.
+- [LangServer] Improved the positioning of XAML document errors
