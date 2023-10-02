@@ -1,5 +1,10 @@
 # NoesisGUI XAML Tools Changelog
  
+## [0.0.45] - 2023-10-03
+
+- [LangServer] Fixed crashes in the XAML parser ([#2624](https://www.noesisengine.com/bugs/view.php?id=2624), [#2672](https://www.noesisengine.com/bugs/view.php?id=2672))
+- [LangServer] Updated LangServer to Noesis 3.2.2
+
 ## [0.0.44] - 2023-06-13
 
 - [LangServer] Fixed local fonts whose paths begin with "./"
