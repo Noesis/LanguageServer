@@ -2,7 +2,7 @@
 
 This extension provides a rich editing experience for [NoesisGUI](https://www.noesisengine.com/) and the XAML markup language, using the NoesisGUI Language Server. The latest release of XAML Tools can be installed from the [Visual Studio Code Marketplace](https://noesisengine.com/vscode).
 
-[<img src="https://img.youtube.com/vi/6gDpvvSfMWI/hqdefault.jpg" width="600" height="300" />](https://www.youtube.com/watch?v=6gDpvvSfMWI)
+[<img src="https://raw.githubusercontent.com/Noesis/Noesis.github.io/master/NoesisGUI/LanguageServer/Readme/CampNoesis_Walkthrough_Thumbnail.png" />](https://www.youtube.com/watch?v=6gDpvvSfMWI)
 
 ## NoesisGUI
 
