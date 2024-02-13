@@ -28,22 +28,22 @@
 				"noesisgui-tools.createLanguageServerInstance": {
 					"type": "boolean",
 					"default": true,
-					"description": "Create a NoesisGUI language server instance"
+					"description": "Create a NoesisGUI Language Server instance"
 				},
 				"noesisgui-tools.languageServerPath": {
 					"type": "string",
 					"default": "",
-					"description": "NoesisGUI language server path, leave empty to use the bundled server"
+					"description": "NoesisGUI Language Server path, leave empty to use the bundled server"
 				},
 				"noesisgui-tools.languageServerArgs": {
 					"type": "array",
 					"default": [],
-					"description": "NoesisGUI language server arguments"
+					"description": "NoesisGUI Language Server arguments"
 				},
 				"noesisgui-tools.languageServerHost": {
 					"type": "string",
 					"default": "127.0.0.1",
-					"description": "NoesisGUI language server host"
+					"description": "NoesisGUI Language Server host"
 				},
 				"noesisgui-tools.reconnectAutomatically": {
 					"type": "boolean",

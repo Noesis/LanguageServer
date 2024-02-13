@@ -1,5 +1,11 @@
 # NoesisGUI XAML Tools Changelog
  
+## [0.0.47] - 2024-02-06
+
+- [LangServer] Added XAML Preview support to Unity and Unreal
+- [LangServer] Fixed namespace processing ([#2773](https://www.noesisengine.com/bugs/view.php?id=2773))
+- [LangServer] Updated LangServer to Noesis 3.2.3
+ 
 ## [0.0.45] - 2023-10-03
 
 - [LangServer] Fixed crashes in the XAML parser ([#2624](https://www.noesisengine.com/bugs/view.php?id=2624), [#2672](https://www.noesisengine.com/bugs/view.php?id=2672))

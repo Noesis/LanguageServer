@@ -32,6 +32,7 @@ interface AnnouncementMessage {
 	serverPort: number;
 	serverName: string;
 	serverPriority: number;
+	canRenderPreview: boolean;
 }
 
 namespace AutoInsertRequest {
@@ -168,11 +169,6 @@ export class NoesisTools {
 		});
 
 		vscode.commands.registerCommand('noesisTool.openPreview', async function (event) {
-			if (noesisTools._announcementMessage != null && noesisTools._announcementMessage.serverName != "Embedded")
-			{				
-				vscode.window.showInformationMessage(`Preview is not available on external language servers (Unity / Unreal)`);
-				return;
-			}
 			if (noesisTools.previewPanel == null)
 			{
 				noesisTools.previewPanel = vscode.window.createWebviewPanel(
@@ -342,7 +338,13 @@ export class NoesisTools {
 
 			if (noesisTools.getConnectionStatus() != TCPConnectionStatus.CONNECTED)
 			{
-				noesisTools.previewPanel.webview.html = getEmptyWebviewContent("Connect to the NoesisGUI language server to begin previewing.");
+				noesisTools.previewPanel.webview.html = getEmptyWebviewContent("Connect to a NoesisGUI Language Server to begin previewing.");
+				return;
+			}
+
+			if (!noesisTools._announcementMessage.canRenderPreview)
+			{
+				noesisTools.previewPanel.webview.html = getEmptyWebviewContent(`${noesisTools._announcementMessage.serverName} Language Server does not support previews.`);
 				return;
 			}
 
@@ -439,13 +441,13 @@ export class NoesisTools {
 					return; 
 				}		
 								
-				logger.log('[client]', `Connecting to serverName: '${this._announcementMessage.serverName}', serverPort: ${this._announcementMessage.serverPort}, serverPriority: ${this._announcementMessage.serverPriority}`);
+				logger.log('[client]', `Connecting to serverName: '${this._announcementMessage.serverName}', serverPort: ${this._announcementMessage.serverPort}, serverPriority: ${this._announcementMessage.serverPriority}, canRenderPreview: ${this._announcementMessage.canRenderPreview}`);
 
 				if (this._languageClient == null
 					|| this._languageClient.connectionStatus == TCPConnectionStatus.PENDING
 					|| this._languageClient.connectionStatus == TCPConnectionStatus.CONNECTED)
 				{
-					this.createLanguageClient();
+					this.createLanguageClient(false);
 				}
 				this._languageClient.connect(this._announcementMessage.serverPort);
 			});
@@ -511,7 +513,7 @@ export class NoesisTools {
 		}
 	}
 
-	private createLanguageClient()
+	private createLanguageClient(createEmbeddedInstance: boolean = true)
 	{						
 		logger.log('[client]', `createLanguageClient`);
 		if (this._languageClient != null)
@@ -529,7 +531,7 @@ export class NoesisTools {
 			this._serverProcess = null;
 		}
 		
-		if (getConfiguration('createLanguageServerInstance') && !this._hadExternalConnection)
+		if (getConfiguration('createLanguageServerInstance') && createEmbeddedInstance) // && !this._hadExternalConnection)
 		{
 			let ext = vscode.extensions.getExtension('NoesisTechnologies.noesisgui-tools')
 			let serverExecPath: string;
@@ -598,10 +600,10 @@ export class NoesisTools {
 		const port = this._languageClient.port;
 		switch (this._languageClient.connectionStatus) {
 			case TCPConnectionStatus.PENDING:
-				vscode.window.showInformationMessage(`Connecting to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`);
+				vscode.window.showInformationMessage(`Connecting to '${this._announcementMessage.serverName}' Language Server at ${host}:${port}`);
 				break;
 			case TCPConnectionStatus.CONNECTED:
-				vscode.window.showInformationMessage(`Connected to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`);
+				vscode.window.showInformationMessage(`Connected to '${this._announcementMessage.serverName}' Language Server at ${host}:${port}`);
 				break;
 			case TCPConnectionStatus.DISCONNECTED:
 				this.createLanguageClient();
@@ -620,21 +622,25 @@ export class NoesisTools {
 		switch (status) {
 			case TCPConnectionStatus.WAITINGFORSERVER:
 				this._connectionStatusBar.text = `$(sync) Noesis`;
-				this._connectionStatusBar.tooltip = `Waiting for announcement from NoesisGUI language server`;
+				this._connectionStatusBar.tooltip = `Waiting for announcement from NoesisGUI Language Server`;
 				break;
 			case TCPConnectionStatus.PENDING:
 				this._connectionStatusBar.text = `$(sync) Noesis [${this._announcementMessage.serverName}]`;
-				this._connectionStatusBar.tooltip = `Connecting to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`;
+				this._connectionStatusBar.tooltip = `Connecting to NoesisGUI Language Server '${this._announcementMessage.serverName}' at ${host}:${port}`;
 				break;
 			case TCPConnectionStatus.CONNECTED:
 				this._connectionStatusBar.text = `$(check) Noesis [${this._announcementMessage.serverName}]`;
-				this._connectionStatusBar.tooltip = `Connected to NoesisGUI language server '${this._announcementMessage.serverName}' at ${host}:${port}`;				
+				this._connectionStatusBar.tooltip = `Connected to NoesisGUI Language Server '${this._announcementMessage.serverName}' at ${host}:${port}`;				
+				if (this._announcementMessage != null && (this._announcementMessage.serverName != "Embedded") || this._hadExternalConnection)
+				{
+					vscode.window.showInformationMessage(`Connected to '${this._announcementMessage.serverName}' Language Server`);
+				}				
 				this.runDiagnosticsCallback();
 				if (!this._languageClient.hasStarted) {
 					this._languageClientDispose = this._languageClient.start();		
 				}
 				break;
-			case TCPConnectionStatus.DISCONNECTED:	
+			case TCPConnectionStatus.DISCONNECTED:
 				this._announcementMessage = null;		
 				if (this._languageClient.hasStarted)
 				{
@@ -666,12 +672,12 @@ export class NoesisTools {
 		}
 
 		this._connectionStatusBar.text = `$(x) Disconnected`;
-		this._connectionStatusBar.tooltip = `Disconnected from NoesisGUI language server.`;
+		this._connectionStatusBar.tooltip = `Disconnected from NoesisGUI Language Server.`;
 
 		if (this._autoReconnect) {
 			const host = getConfiguration('languageServerHost');
 			const port = this._languageClient.port;
-			const message = `Failed to connect to NoesisGUI language server at ${host}:${port}. Is the server running?`;
+			const message = `Failed to connect to NoesisGUI Language Server at ${host}:${port}. Is the server running?`;
 			vscode.window.showErrorMessage(message, 'Retry', 'Cancel').then(item => {
 				if (item == 'Retry') {
 					this._reconnectAttemptCount = 0;
