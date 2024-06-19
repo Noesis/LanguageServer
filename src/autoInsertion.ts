@@ -53,20 +53,31 @@ export function activateAutoInsertion(noesisTools: NoesisTools,
 	}
 
 	function onDidChangeTextDocument({ document, contentChanges, reason }: TextDocumentChangeEvent) {
-		if (!anyIsEnabled || contentChanges.length === 0 || reason === TextDocumentChangeReason.Undo || reason === TextDocumentChangeReason.Redo) {
+		if (contentChanges.length === 0 || reason === TextDocumentChangeReason.Undo || reason === TextDocumentChangeReason.Redo) {
 			return;
 		}
 		const activeDocument = window.activeTextEditor && window.activeTextEditor.document;
 		if (document !== activeDocument || document.languageId != 'xaml') {
 			return;
 		}
+
+		const lastChange = contentChanges[contentChanges.length - 1];
+
+		if (lastChange.text === '{}')
+		{
+			vscode.commands.executeCommand('editor.action.triggerSuggest');
+		}
+
+		if (!anyIsEnabled)
+		{
+			return;
+		}
+
 		if (timeout != null) {
 			clearTimeout(timeout);
 			timeout = null;
 		}
 
-		const lastChange = contentChanges[contentChanges.length - 1];
-		const lastCharacter = lastChange.text[lastChange.text.length - 1];
 		if (isEnabled['autoQuote'] && lastChange.text === '=') {
 			scheduleAutoInsert('autoQuote', document, lastChange);
 		} else if (isEnabled['autoClose'] && (lastChange.text === '>' || lastChange.text === '/')) {
