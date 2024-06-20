@@ -1,5 +1,12 @@
 # NoesisGUI XAML Tools Changelog
  
+## [0.0.49] - 2024-06-20
+
+- [LangServer] Added Completion for expressions (Binding, StaticResource etc.), including types, and properties ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
+- [LangServer] Added Completion of resource keys for StaticResource and DynamicResource extensions ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
+- [LangServer] Fixed incorrect positions displayed for some errors
+- [LangServer] Updated LangServer to Noesis 3.2.4
+ 
 ## [0.0.47] - 2024-02-06
 
 - [LangServer] Added XAML Preview support to Unity and Unreal
