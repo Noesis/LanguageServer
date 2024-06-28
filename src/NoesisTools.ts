@@ -640,10 +640,10 @@ export class NoesisTools {
 					this._languageClientDispose = this._languageClient.start();		
 				}
 				break;
-			case TCPConnectionStatus.DISCONNECTED:
-				this._announcementMessage = null;		
+			case TCPConnectionStatus.DISCONNECTED:	
 				if (this._languageClient.hasStarted)
 				{
+					this._announcementMessage = null;	
 					logger.log('[client]', `Client disconnected`);
 					this.createLanguageClient();
 				}	
