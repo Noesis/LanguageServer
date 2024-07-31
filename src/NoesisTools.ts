@@ -426,10 +426,18 @@ export class NoesisTools {
 				{
 					return;
 				}
+
+				const isEmbedded = announcementMessage.serverName == "Embedded";
+
+				if (isEmbedded && !getConfiguration('createLanguageServerInstance'))
+				{
+					// Do not connect to Embedded servers when createLanguageServerInstance is false
+					return;
+				}
 				
 				if (!this._hadExternalConnection)
 				{
-					this._hadExternalConnection = announcementMessage.serverName != "Embedded";
+					this._hadExternalConnection = !isEmbedded;
 				}
 
 				this._announcementMessage = announcementMessage;
