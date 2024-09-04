@@ -1,60 +1,27 @@
 import { AbstractMessageReader, MessageReader, DataCallback, Disposable } from 'vscode-jsonrpc';
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
-import * as dgram from 'dgram';
-import * as vscode from 'vscode';
 
 import MessageBuffer from './MessageBuffer';
 import { AbstractMessageWriter, MessageWriter } from 'vscode-jsonrpc';
 import { RequestMessage, ResponseMessage, NotificationMessage } from 'vscode-jsonrpc';
-import { integer } from 'vscode-languageclient';
-import logger from '../logger';
 
 export type Message = RequestMessage | ResponseMessage | NotificationMessage;
-
-export enum TCPConnectionStatus {
-	WAITINGFORSERVER,
-	PENDING,
-	DISCONNECTED,
-	CONNECTED,
-}
 
 export class TCPClientConnection extends EventEmitter {
 
 	public readonly reader: TCPMessageReader = new TCPMessageReader(this);
 	public readonly writer: TCPMessageWriter = new TCPMessageWriter(this);
 	
-	private _port: number;
 	private _socket: Socket = null;
-	private _status : TCPConnectionStatus = TCPConnectionStatus.WAITINGFORSERVER;
-	private _statusChangedCallbacks: ((value : TCPConnectionStatus)=>void)[] = [];
-
-	public get status() : TCPConnectionStatus { return this._status; }
-	public set status(value : TCPConnectionStatus) {
-		if (this._status != value) {
-			this._status = value;
-			for (const callback of this._statusChangedCallbacks) {
-				callback(value);
-			}
-		}
-	}
-
-	public get port() : integer { return this._port; }
 
 	protected destroyCurrentSocket(error?: Error) {
-		this.status = TCPConnectionStatus.DISCONNECTED;
 		if (this._socket != null)
 		{
 			this._socket.destroy(error);
 			this._socket = null;
 		}
-	}
-
-	public addStatusListener(callback: (v : TCPConnectionStatus)=>void) {
-		if (this._statusChangedCallbacks.indexOf(callback) == -1) {
-			this._statusChangedCallbacks.push(callback);
-			callback(this.status);
-		}
+		this.emit('disconnected');
 	}
 
 	public sendMessage(message: string) {
@@ -63,12 +30,8 @@ export class TCPClientConnection extends EventEmitter {
 		}
 	}
 
-	async connect(host: string, port: number):Promise<void> {
-		this.disconnect();
-		this._port = port;
-		this.status = TCPConnectionStatus.PENDING;
-		return new Promise((resolve, reject) => {
-								
+	async connect(host: string, port: number):Promise<void> {		
+		return new Promise((resolve, reject) => {								
 			const socket = new Socket();
 			socket.connect(port, host);
 			socket.on('connect', ()=>{ this.onConnect(socket); resolve(); });
@@ -78,22 +41,17 @@ export class TCPClientConnection extends EventEmitter {
 		});
 	}
 
-	public disconnect(error?: Error) {
-		if (this.status != TCPConnectionStatus.WAITINGFORSERVER && this.status != TCPConnectionStatus.DISCONNECTED)
-		{
-			this.destroyCurrentSocket(error);
-		}
+	public disconnect(error?: Error) {		
+		this.destroyCurrentSocket(error);
 	}
 
 	protected onConnect(socket: Socket) {
 		this._socket = socket;
 		this.emit('connected');
-		this.status = TCPConnectionStatus.CONNECTED;
 	}
 
 	protected onDisconnect() {
 		this.destroyCurrentSocket();
-		this.emit('disconnected');
 	}
 
 	protected onReceiveMessage(chunk: Buffer) {

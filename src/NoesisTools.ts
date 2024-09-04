@@ -6,12 +6,10 @@ import * as os from 'os';
 import * as cp from 'child_process'
 import * as path from 'path'
 import * as dgram from 'dgram';
-import NoesisLanguageClient from './lsp/NoesisLanguageClient';
-import { TCPConnectionStatus } from './lsp/TCPConnection';
+import NoesisClient, { NoesisConnectionStatus, AnnouncementMessage } from './lsp/NoesisClient';
 import { getConfiguration } from './Utils';
 import { activateAutoInsertion, AutoInsertResult, HasCompletionItemsResult } from './autoInsertion';
 import { activateRunDiagnostics } from './runDiagnostics';
-import { Func } from 'mocha';
 
 interface AutoInsertParams {
 	/**
@@ -26,13 +24,6 @@ interface AutoInsertParams {
 	 * The position inside the text document.
 	 */
 	position: LspPosition;
-}
-
-interface AnnouncementMessage {	
-	serverPort: number;
-	serverName: string;
-	serverPriority: number;
-	canRenderPreview: boolean;
 }
 
 namespace AutoInsertRequest {
@@ -75,19 +66,16 @@ namespace RunDiagnosticsNotification {
 
 export class NoesisTools {
 	private _context: vscode.ExtensionContext;
-	private _languageClient: NoesisLanguageClient = null;
-	private _languageClientDispose: vscode.Disposable = null;
-	private _autoReconnect = false;
-	private _reconnectAttemptCount = 0;
+	private _client: NoesisClient = null;
 	private _connectionStatusBar: vscode.StatusBarItem = null;
 	private _noesisPath: Uri = null;
 	private _intervals: Array<NodeJS.Timeout> = new Array<NodeJS.Timeout>();
 	private _serverProcess: cp.ChildProcess;
 	private _announcementSocket: dgram.Socket = null;
-	private _announcementMessage: AnnouncementMessage;
 	private _hadExternalConnection: boolean = false;
+	private _announcementPort: number = 0;
 	public previewPanel: vscode.WebviewPanel = null;
-	public runDiagnosticsCallback: Function;
+	public runDiagnosticsCallback: Function;	
 
 	constructor(context: vscode.ExtensionContext) {
 		this._context = context;
@@ -99,7 +87,7 @@ export class NoesisTools {
 		vscode.commands.registerCommand('noesisTool.checkConnectionStatus', this.checkConnectionStatus.bind(this));
 
 		this._connectionStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);	
-		this._connectionStatusBar.text = `$(sync) Initializing`;
+		this._connectionStatusBar.text = `$(x) Disconnected`;
 		this._connectionStatusBar.command = 'noesisTool.checkConnectionStatus';
 		this._connectionStatusBar.show();
 
@@ -107,19 +95,27 @@ export class NoesisTools {
 		let noesisTools = this;
 		
 		const insertRequestor = (kind: 'autoQuote' | 'autoClose', document: TextDocument, position: Position): Promise<AutoInsertResult> => {
+			if (this.getConnectionStatus() != NoesisConnectionStatus.CONNECTED)
+			{
+				return null;
+			}
 			const param: AutoInsertParams = {
 				kind,
-				textDocument: this._languageClient.code2ProtocolConverter.asTextDocumentIdentifier(document),
-				position: this._languageClient.code2ProtocolConverter.asPosition(position)
+				textDocument: this._client.languageClient.code2ProtocolConverter.asTextDocumentIdentifier(document),
+				position: this._client.languageClient.code2ProtocolConverter.asPosition(position)
 			};
-			return this._languageClient.sendRequest(AutoInsertRequest.type, param);
+			return this._client.languageClient.sendRequest(AutoInsertRequest.type, param);
 		};			
 		const hasCompletionItemsRequestor = (document: TextDocument, position: Position): Promise<HasCompletionItemsResult> => {
+			if (this.getConnectionStatus() != NoesisConnectionStatus.CONNECTED)
+			{
+				return null;
+			}
 			const param: HasCompletionItemsParams = {
-				textDocument: this._languageClient.code2ProtocolConverter.asTextDocumentIdentifier(document),
-				position: this._languageClient.code2ProtocolConverter.asPosition(position)
+				textDocument: this._client.languageClient.code2ProtocolConverter.asTextDocumentIdentifier(document),
+				position: this._client.languageClient.code2ProtocolConverter.asPosition(position)
 			};
-			return this._languageClient.sendRequest(HasCompletionItemsRequest.type, param);
+			return this._client.languageClient.sendRequest(HasCompletionItemsRequest.type, param);
 		};	
 		this._context.subscriptions.push(activateAutoInsertion(this, insertRequestor, hasCompletionItemsRequestor));
 		
@@ -127,12 +123,16 @@ export class NoesisTools {
 		let previewPanelHeight: integer = 0;
 
 		const diagnosticsRequestor = () => {
+			if (this.getConnectionStatus() != NoesisConnectionStatus.CONNECTED)
+			{
+				return null;
+			}
 			const param: RunDiagnosticsParams = {
 				previewRenderWidth: previewPanelWidth,
 				previewRenderHeight: previewPanelHeight,
 				previewRenderTime: getConfiguration('xamlPreviewRenderTime', 0)
 			};
-			this._languageClient.sendNotification(RunDiagnosticsNotification.type, param);
+			this._client.languageClient.sendNotification(RunDiagnosticsNotification.type, param);
 		};
 
 		vscode.workspace.onDidChangeConfiguration(event => {
@@ -148,8 +148,16 @@ export class NoesisTools {
 				|| event.affectsConfiguration("noesisgui-tools.reconnectDelay")
 				|| event.affectsConfiguration("noesisgui-tools.reconnectAttempts");
 			if (clientAffected)
-			{
-				this.createLanguageClient();
+			{		
+				if (this._client != null)
+				{
+					this._client.stop();
+					this._client = null;
+				}		
+				else
+				{
+					this.trySpawnServerProcess();
+				}
 			}
 		});
 	
@@ -159,8 +167,6 @@ export class NoesisTools {
 			const activeEditor = vscode.window.activeTextEditor;
 			if (activeEditor && activeEditor.document.languageId == "xaml") {
 				hasCompletionItemsRequestor(activeEditor.document, activeEditor.selection.start).then(result => {
-					// const provider = noesisTools.GetLanguageClientFeature(lsclient.CompletionRequest.method).getProvider(document);
-					// provider.provideCompletionItems(document, cursorPosition, new vscode.CancellationTokenSource().token, { triggerKind: vscode.CompletionTriggerKind.Invoke, triggerCharacter: '<' });
 					if (result.items.length > 0) {
 						vscode.commands.executeCommand('editor.action.triggerSuggest');
 					}
@@ -202,7 +208,6 @@ export class NoesisTools {
 						const height = parseInt(size[1]);
 						if (width != previewPanelWidth || height != previewPanelHeight)
 						{
-							//vscode.window.showErrorMessage(`${size[0]} x ${size[1]}`);
 							previewPanelWidth = width;
 							previewPanelHeight = height;
 							noesisTools.runDiagnosticsCallback();
@@ -286,7 +291,7 @@ export class NoesisTools {
 				</html>`;
 		}	
 		
-		let imageUri : string = null; //Uri = null;
+		let imageUri : string = null;
 	
 		const updateWebview = async function () {
 			const activeEditor = vscode.window.activeTextEditor;
@@ -326,7 +331,6 @@ export class NoesisTools {
 				}
 				previewFilePath = `${tmpDir}${sep}noesis${sep}${previewFilePath}.png`;
 				imageUri = previewFilePath;
-				//imageUri = Uri.file(previewFilePath);
 			}
 
 			if (noesisTools.previewPanel == null)
@@ -336,15 +340,15 @@ export class NoesisTools {
 				return;
 			}
 
-			if (noesisTools.getConnectionStatus() != TCPConnectionStatus.CONNECTED)
+			if (noesisTools.getConnectionStatus() != NoesisConnectionStatus.CONNECTED)
 			{
 				noesisTools.previewPanel.webview.html = getEmptyWebviewContent("Connect to a NoesisGUI Language Server to begin previewing.");
 				return;
 			}
 
-			if (!noesisTools._announcementMessage.canRenderPreview)
+			if (!noesisTools._client.announcementMessage.canRenderPreview)
 			{
-				noesisTools.previewPanel.webview.html = getEmptyWebviewContent(`${noesisTools._announcementMessage.serverName} Language Server does not support previews.`);
+				noesisTools.previewPanel.webview.html = getEmptyWebviewContent(`${noesisTools._client.announcementMessage.serverName} Language Server does not support previews.`);
 				return;
 			}
 
@@ -352,8 +356,8 @@ export class NoesisTools {
 			{
 				try {	
 					const fs = require('fs/promises');
-					let imageBytesUtf8 = await fs.readFile(imageUri);			
-					//let imageBytesUtf8 = await vscode.workspace.fs.readFile(imageUri);
+					let imageBytesUtf8 = await fs.readFile(imageUri);
+
 					if (imageBytesUtf8.byteLength == 70)
 					{									 
 						noesisTools.previewPanel.webview.html = getEmptyWebviewContent("Fix errors in the XAML document to begin previewing.");
@@ -398,95 +402,102 @@ export class NoesisTools {
 		const udpPortRangeBegin = 16629;
 		const udpPortRangeEnd = 16649;
 
-		let udpPort = udpPortRangeBegin;	
+		this._announcementPort = udpPortRangeBegin;
 
 		const socketBindCallback = (announcementSocket: dgram.Socket, success: boolean) => {			
 
 			if (!success)
 			{
-				udpPort++;
-				if (udpPort > udpPortRangeEnd)
+				this._announcementPort++;
+				if (this._announcementPort > udpPortRangeEnd)
 				{
 					let errorMessage: string = `Failed to bind UDP announcement port between range ${udpPortRangeBegin} and ${udpPortRangeEnd}`;
 					logger.log('[client]', errorMessage);
 					vscode.window.showErrorMessage(errorMessage);
+					this._announcementPort = -1;
 					return;
 				}
-				bindSocket(udpPort, socketBindCallback);
+				bindSocket(this._announcementPort, socketBindCallback);
 				return;
-			}
+			}			
 
-			logger.log('[client]', `Bound to UDP announcement port ${udpPort}`);
-			this._announcementSocket = announcementSocket;
+			this.trySpawnServerProcess();
+
+			logger.log('[client]', `Bound to announcement port: ${this._announcementPort}`);
+			this._announcementSocket = announcementSocket;			
 			this._announcementSocket.on('message', (buffer, remote) => {				
 				const message = buffer.toString('utf8');
-				const announcementMessage: AnnouncementMessage = JSON.parse(message);
+				const announcementMessage: AnnouncementMessage = JSON.parse(message);				
 
-				if (this._announcementMessage != null && this._announcementMessage.serverPriority <= announcementMessage.serverPriority)
+				if (this._client != null)
 				{
-					return;
+					if (this._client.announcementMessage.serverPriority <= announcementMessage.serverPriority)
+					{
+						return;
+					}
+
+					this._client.stop();
 				}
 
 				const isEmbedded = announcementMessage.serverName == "Embedded";
-
-				if (isEmbedded && !getConfiguration('createLanguageServerInstance'))
+				if (isEmbedded)
 				{
-					// Do not connect to Embedded servers when createLanguageServerInstance is false
-					return;
+					if (!getConfiguration('createLanguageServerInstance'))
+					{
+						return;
+					}
+				}
+				else if (this._serverProcess != null)
+				{
+					this._serverProcess.kill();
+					this._serverProcess = null;
 				}
 				
 				if (!this._hadExternalConnection)
 				{
 					this._hadExternalConnection = !isEmbedded;
 				}
+				
+				logger.log('[client]', `Accepted AnnouncementMessage: '${message}' from ${remote.address}:${remote.port}`);
 
-				this._announcementMessage = announcementMessage;
-
-				if (isNaN(this._announcementMessage.serverPort))
+				let address = remote.address;
+				let port = remote.port;
+				if (announcementMessage.serverPort > 0)
 				{
-					logger.log('[client]', `Error: invalid server broadcast port '${message}'`);
-					vscode.window.showErrorMessage('Invalid connection port broadcast from NoesisGUI server');
-					return; 
-				}		
-								
-				logger.log('[client]', `Connecting to serverName: '${this._announcementMessage.serverName}', serverPort: ${this._announcementMessage.serverPort}, serverPriority: ${this._announcementMessage.serverPriority}, canRenderPreview: ${this._announcementMessage.canRenderPreview}`);
-
-				if (this._languageClient == null
-					|| this._languageClient.connectionStatus == TCPConnectionStatus.PENDING
-					|| this._languageClient.connectionStatus == TCPConnectionStatus.CONNECTED)
-				{
-					this.createLanguageClient(false);
+					// Deprecated, remaining compatible with older LangServer versions
+					address = "127.0.0.1";
+					port = announcementMessage.serverPort;
 				}
-				this._languageClient.connect(this._announcementMessage.serverPort);
-			});
+				
+				this._client = new NoesisClient(context, announcementMessage, address, port);
+				this._client.addConnectionStatusListener(this.onConnectionStatusChanged.bind(this));
+				this._client.start();
+			});			
 
+			this.findServer();
+			this._intervals.push(setInterval(this.findServer.bind(this), 1000));
 		};
 
-		bindSocket(udpPort, socketBindCallback);
+		bindSocket(this._announcementPort, socketBindCallback);
 		
-		const openRenderPreview = getConfiguration('openRenderPreviewOnStart');
+		const openRenderPreview = getConfiguration('openRenderPreviewOnStart', false);
 		if (openRenderPreview)
 		{
 			vscode.commands.executeCommand('noesisTool.openPreview');
 		}
 
-		await updateWebview();							
-		this._intervals.push(setInterval(updateWebview, 100)) ;						
-		this._intervals.push(setInterval(() => {
-			this.retryConnectCallback();
-		}, getConfiguration('reconnectDelay')));
+		await updateWebview();
+		this._intervals.push(setInterval(updateWebview, 100));
+	}
 
-		this.createLanguageClient();
-	}	
-
-	public getConnectionStatus() : TCPConnectionStatus
+	public getConnectionStatus() : NoesisConnectionStatus
 	{
-		if (this._languageClient == null)
+		if (this._client == null)
 		{
-			return TCPConnectionStatus.DISCONNECTED;
+			return NoesisConnectionStatus.DISCONNECTED;
 		}
 
-		return this._languageClient.connectionStatus;
+		return this._client.connectionStatus;
 	}
 
 	public dispose() {
@@ -495,20 +506,19 @@ export class NoesisTools {
 		});
 		this._intervals = new Array<NodeJS.Timeout>();
 
-		this._languageClient.stop();
-		this._languageClient = null;
+		if (this._client != null)
+		{
+			this._client.stop();
+			this._client = null;
+		}
+
 		if (this._noesisPath != null)
 		{			
 			vscode.workspace.fs.delete(this._noesisPath, {
 				recursive: true,
 				useTrash: false
 			});
-		}
-		if (this._languageClientDispose != null)
-		{
-			this._languageClientDispose.dispose();
-			this._languageClientDispose = null;
-		}		
+		}	
 		if (this._announcementSocket != null)
 		{
 			this._announcementSocket.close();
@@ -521,25 +531,30 @@ export class NoesisTools {
 		}
 	}
 
-	private createLanguageClient(createEmbeddedInstance: boolean = true)
+	private findServer()
+	{
+		if (this._client == null && this._announcementSocket != null)
+		{		
+			const serverPortRangeBegin = 16529;
+			const serverPortRangeEnd = 16549;
+
+			for	(let serverPort = serverPortRangeBegin; serverPort <= serverPortRangeEnd; serverPort++)
+			{
+				this._announcementSocket.send("NoesisLangServer", serverPort, "127.0.0.1");
+			}
+		}
+	}
+
+	private trySpawnServerProcess()
 	{						
-		logger.log('[client]', `createLanguageClient`);
-		if (this._languageClient != null)
-		{
-			this._languageClient.stop();
-		}
-		if (this._languageClientDispose != null)
-		{
-			this._languageClientDispose.dispose();
-			this._languageClientDispose = null;
-		}
+		logger.log('[client]', `trySpawnServerProcess`);
 		if (this._serverProcess != null)
 		{
 			this._serverProcess.kill();
 			this._serverProcess = null;
 		}
 		
-		if (getConfiguration('createLanguageServerInstance') && createEmbeddedInstance) // && !this._hadExternalConnection)
+		if (getConfiguration('createLanguageServerInstance', false))
 		{
 			let ext = vscode.extensions.getExtension('NoesisTechnologies.noesisgui-tools')
 			let serverExecPath: string;
@@ -557,10 +572,14 @@ export class NoesisTools {
 			{		
 				const fs = require('fs');							
 				serverExecPath = path.join(ext.extensionPath, 'bin', 'macos', 'App.LangServerTool');
-				fs.chmodSync(serverExecPath, 0o755);
+				if (fs.existsSync(serverExecPath)) {
+					fs.chmodSync(serverExecPath, 0o755);
+				}				
 			}
 			
-			const configArgs: string[] = getConfiguration('languageServerArgs');	
+			const configArgs: string[] = getConfiguration('languageServerArgs');
+			configArgs.unshift(this._announcementPort.toString());
+			configArgs.unshift("--port");
 			this._serverProcess = cp.execFile(serverExecPath, configArgs, (error: cp.ExecFileException, stdout: string, stderr: string) => {		
 				if (error)
 				{
@@ -591,110 +610,63 @@ export class NoesisTools {
 				logger.log('[client]', `serverExecPath '${serverExecPath}' has no stdout?`);
 			}
 
-			logger.log('[client]', `platform: '${process.platform}', serverExecPath: '${serverExecPath}'`);
+			logger.log('[client]', `platform: '${process.platform}', serverExecPath: '${serverExecPath}', args: '${configArgs.join(' ')}'`);
 		}
-
-		this._languageClient = new NoesisLanguageClient(this._context);
-		this._languageClient.addConnectionStatusListener(this.onConnectionStatusChanged.bind(this));
 	}
 
 	private checkConnectionStatus() {
-		if (this._languageClient == null)
+		if (this._client == null)
 		{
-			vscode.window.showErrorMessage('Cannot check connection status, awaiting initialization');
+			vscode.window.showInformationMessage('Disconnected from NoesisGUI Language Server.');
 			return;
-		}
-		const host = getConfiguration('languageServerHost');
-		const port = this._languageClient.port;
-		switch (this._languageClient.connectionStatus) {
-			case TCPConnectionStatus.PENDING:
-				vscode.window.showInformationMessage(`Connecting to '${this._announcementMessage.serverName}' Language Server at ${host}:${port}`);
+		}		
+
+		const host = this._client.serverAddress;
+		const port = this._client.serverPort;
+		switch (this._client.connectionStatus) {
+			case NoesisConnectionStatus.CONNECTING:
+				vscode.window.showInformationMessage(`Connecting to ${host}:${port} - ${JSON.stringify(this._client.announcementMessage)}'`);
 				break;
-			case TCPConnectionStatus.CONNECTED:
-				vscode.window.showInformationMessage(`Connected to '${this._announcementMessage.serverName}' Language Server at ${host}:${port}`);
+			case NoesisConnectionStatus.CONNECTED:
+				vscode.window.showInformationMessage(`Connected to ${host}:${port} - ${JSON.stringify(this._client.announcementMessage)}'`);
 				break;
-			case TCPConnectionStatus.DISCONNECTED:
-				this.createLanguageClient();
+			case NoesisConnectionStatus.DISCONNECTED:
+				this.trySpawnServerProcess();
 				break;
 		}
 	}
 
-	private onConnectionStatusChanged(status: TCPConnectionStatus) {
-		if (this._languageClient == null)
+	private onConnectionStatusChanged(status: NoesisConnectionStatus) {
+		if (this._client == null)
 		{
-			vscode.window.showErrorMessage('Cannot update connection status, awaiting initialization');
+			this._connectionStatusBar.text = `$(sync) Noesis`;
+			this._connectionStatusBar.tooltip = `Waiting for announcement from NoesisGUI Language Server`;
 			return;
 		}
-		const host = getConfiguration('languageServerHost');
-		const port = this._languageClient.port;
+		const host = this._client.serverAddress;
+		const port = this._client.serverPort;
 		switch (status) {
-			case TCPConnectionStatus.WAITINGFORSERVER:
+			case NoesisConnectionStatus.INITIALIZING:
 				this._connectionStatusBar.text = `$(sync) Noesis`;
-				this._connectionStatusBar.tooltip = `Waiting for announcement from NoesisGUI Language Server`;
+				this._connectionStatusBar.tooltip = `Initializing connection to NoesisGUI Language Server '${this._client.announcementMessage.serverName}' at ${host}:${port}`;
 				break;
-			case TCPConnectionStatus.PENDING:
-				this._connectionStatusBar.text = `$(sync) Noesis [${this._announcementMessage.serverName}]`;
-				this._connectionStatusBar.tooltip = `Connecting to NoesisGUI Language Server '${this._announcementMessage.serverName}' at ${host}:${port}`;
+			case NoesisConnectionStatus.CONNECTING:
+				this._connectionStatusBar.text = `$(sync) Noesis [${this._client.announcementMessage.serverName}]`;
+				this._connectionStatusBar.tooltip = `Connecting to NoesisGUI Language Server '${this._client.announcementMessage.serverName}' at ${host}:${port}`;
 				break;
-			case TCPConnectionStatus.CONNECTED:
-				this._connectionStatusBar.text = `$(check) Noesis [${this._announcementMessage.serverName}]`;
-				this._connectionStatusBar.tooltip = `Connected to NoesisGUI Language Server '${this._announcementMessage.serverName}' at ${host}:${port}`;				
-				if (this._announcementMessage != null && (this._announcementMessage.serverName != "Embedded") || this._hadExternalConnection)
-				{
-					vscode.window.showInformationMessage(`Connected to '${this._announcementMessage.serverName}' Language Server`);
-				}				
+			case NoesisConnectionStatus.CONNECTED:
+				this._connectionStatusBar.text = `$(check) Noesis [${this._client.announcementMessage.serverName}]`;
+				this._connectionStatusBar.tooltip = `Connected to NoesisGUI Language Server '${this._client.announcementMessage.serverName}' at ${host}:${port}`;
 				this.runDiagnosticsCallback();
-				if (!this._languageClient.hasStarted) {
-					this._languageClientDispose = this._languageClient.start();		
-				}
 				break;
-			case TCPConnectionStatus.DISCONNECTED:	
-				if (this._languageClient.hasStarted)
-				{
-					this._announcementMessage = null;	
-					logger.log('[client]', `Client disconnected`);
-					this.createLanguageClient();
-				}	
+			case NoesisConnectionStatus.DISCONNECTED:
+				this._connectionStatusBar.text = `$(x) Disconnected`;
+				this._connectionStatusBar.tooltip = `Disconnected from NoesisGUI Language Server.`;
+				this._client.stop();
+				this._client = null;
+				this.trySpawnServerProcess();
 			default:
 				break;
 		}
-	}
-
-	private retryConnectCallback() {		
-		if (this._languageClient.connectionStatus != TCPConnectionStatus.DISCONNECTED) {
-			return		
-		}
-		if (this._languageClient == null)
-		{
-			vscode.window.showInformationMessage('Awaiting initialization..');
-			return;
-		}
-		const shouldRetry = getConfiguration('reconnectAutomatically');
-		const maxRetryCount = getConfiguration('reconnectAttempts');
-		if (shouldRetry && this._reconnectAttemptCount < maxRetryCount) {
-			this._reconnectAttemptCount++;
-
-			this._languageClient.connect(this._announcementMessage.serverPort);
-			this._autoReconnect = true;
-			return;
-		}
-
-		this._connectionStatusBar.text = `$(x) Disconnected`;
-		this._connectionStatusBar.tooltip = `Disconnected from NoesisGUI Language Server.`;
-
-		if (this._autoReconnect) {
-			const host = getConfiguration('languageServerHost');
-			const port = this._languageClient.port;
-			const message = `Failed to connect to NoesisGUI Language Server at ${host}:${port}. Is the server running?`;
-			vscode.window.showErrorMessage(message, 'Retry', 'Cancel').then(item => {
-				if (item == 'Retry') {
-					this._reconnectAttemptCount = 0;
-					this._autoReconnect = true;
-					this._languageClient.connect(this._announcementMessage.serverPort);
-				}
-			});
-		}
-
-		this._autoReconnect = false
 	}
 }

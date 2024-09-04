@@ -40,30 +40,10 @@
 					"default": [],
 					"description": "NoesisGUI Language Server arguments"
 				},
-				"noesisgui-tools.languageServerHost": {
-					"type": "string",
-					"default": "127.0.0.1",
-					"description": "NoesisGUI Language Server host"
-				},
-				"noesisgui-tools.reconnectAutomatically": {
-					"type": "boolean",
-					"default": true,
-					"description": "Attempt to reconnect automatically, after a disconnect"
-				},
 				"noesisgui-tools.openRenderPreviewOnStart": {
 					"type": "boolean",
 					"default": false,
 					"description": "Open the XAML Render Preview when NoesisGUI Tools starts"
-				},
-				"noesisgui-tools.reconnectDelay": {
-					"type": "number",
-					"default": 3000,
-					"description": "Milliseconds to wait before attempting to reconnect"
-				},
-				"noesisgui-tools.reconnectAttempts": {
-					"type": "number",
-					"default": 20,
-					"description": "How many times the extensions will attempt to reconnect"
 				},
 				"noesisgui-tools.autoCreateQuotes": {
 					"type": "boolean",
@@ -130,7 +110,7 @@
 		"configurationDefaults": {
 			"[xaml]": {
 				"editor.suggest.snippetsPreventQuickSuggestions": false,
-				"editor.wordBasedSuggestions": false,
+				"editor.wordBasedSuggestions": "off",
 				"editor.tabSize": 2,
 				"editor.insertSpaces": true,
 				"editor.quickSuggestions": {
