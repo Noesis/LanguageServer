@@ -1,9 +1,31 @@
 # NoesisGUI XAML Tools Changelog
  
+## [0.1.53] - 2024-09-04
+
+- [LangServer] Added multi-client support to LangServer and NoesisGUI Tools
+- [LangServer] Added completion of Binding property values ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
+- [LangServer] Added completion of TargetType, AncestorType, and DataType, property values ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
+- [LangServer] Added completion of TargetName, ElementName, and SourceName, property values ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
+- [LangServer] Added completion of Setter Property and Value properties
+- [LangServer] Added color decorator support to Setter Value property
+- [LangServer] Added handling of periods in completion of property names and resource keys
+- [LangServer] Added sorting of completion results
+- [LangServer] Added ClientPort to LangServer, allowing for connection to a specific server
+- [LangServer] Improved LangServer network discovery, removing broadcast UPD messages
+- [LangServer] Fixed GPU memory leak in D3D11 embedded LangServer
+- [LangServer] Fixed expression property completion adding invalid quotation marks
+- [LangServer] Fixed missing color completion and decorator, in Color element content values 
+- [LangServer] Fixed value completion in node properties
+- [LangServer] Fixed color decorator using invalid metadata in some cases
+- [LangServer] Fixed color decorators disappearing when the document contains an empty color value
+- [LangServer] Fixed completion not working for read-only collection properties
+- [LangServer] Fixed some root completion snippets having the final jump point at the end of the document
+- [LangServer] Updated LangServer to Noesis 3.2.5
+ 
 ## [0.0.49] - 2024-06-20
 
-- [LangServer] Added Completion for expressions (Binding, StaticResource etc.), including types, and properties ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
-- [LangServer] Added Completion of resource keys for StaticResource and DynamicResource extensions ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
+- [LangServer] Added completion for expressions (Binding, StaticResource etc.), including types, and properties ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
+- [LangServer] Added completion of resource keys for StaticResource and DynamicResource extensions ([#3178](https://www.noesisengine.com/bugs/view.php?id=3178))
 - [LangServer] Fixed incorrect positions displayed for some errors
 - [LangServer] Updated LangServer to Noesis 3.2.4
  
