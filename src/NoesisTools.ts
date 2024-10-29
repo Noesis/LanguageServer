@@ -509,7 +509,7 @@ export class NoesisTools {
 		if (this._client != null)
 		{
 			this._client.stop();
-			this._client = null;
+			this._client = null;			
 		}
 
 		if (this._noesisPath != null)
@@ -664,6 +664,7 @@ export class NoesisTools {
 				this._connectionStatusBar.tooltip = `Disconnected from NoesisGUI Language Server.`;
 				this._client.stop();
 				this._client = null;
+				this.findServer();
 				this.trySpawnServerProcess();
 			default:
 				break;
