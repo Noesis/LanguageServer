@@ -1,5 +1,14 @@
 # NoesisGUI XAML Tools Changelog
  
+## [0.1.54] - 2024-01-20
+
+- [LangServer] Added support for SolidColorBrush in CapabilityColor
+- [LangServer] Added support for ContentPropertyMetaData in CapabilityColor
+- [LangServer] Fixed crashing when a ResourceDictionary with MergedDictionaries is set to a type which does not exist
+- [LangServer] Fixed completion failing when XAML contains an expression with an embedded expression as it's parameter
+- [LangServer] Fixed crashes when completing a resource key where a resource with no valid type exists
+- [LangServer] Updated LangServer to Noesis 3.2.7
+ 
 ## [0.1.53] - 2024-09-04
 
 - [LangServer] Added multi-client support to LangServer and NoesisGUI Tools
